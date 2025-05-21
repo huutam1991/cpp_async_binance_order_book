@@ -14,23 +14,31 @@ Task<int> async_main()
     // Init Timer with ioc TIMER
     TimerNew::init(IOCPool::get_ioc_by_id(IOCId::TIMER));
 
-    std::vector<OrderBook> order_book_list;
+    std::vector<std::unique_ptr<OrderBook>> order_book_list;
 
     // BTCUSDT
-    order_book_list.emplace_back(
+    order_book_list.push_back(std::make_unique<OrderBook>(
         "btcusdt", 
         1000,
         IOCPool::get_ioc_by_id(IOCId::BTCUSDT), 
         EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW)
-    );
+    ));
 
     // ETHUSDT
-    order_book_list.emplace_back(
+    order_book_list.push_back(std::make_unique<OrderBook>(
         "ethusdt", 
         1000,
         IOCPool::get_ioc_by_id(IOCId::ETHUSDT), 
         EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW)
-    );
+    ));
+
+    // BNBUSDT
+    order_book_list.push_back(std::make_unique<OrderBook>(
+        "bnbusdt", 
+        1000,
+        IOCPool::get_ioc_by_id(IOCId::BNBUSDT), 
+        EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW)
+    ));
 
     // Loop to send REST request to query orderbook (full) at every 5 seconds
     while (true) 
@@ -39,7 +47,7 @@ Task<int> async_main()
 
         for (auto& order_book : order_book_list)
         {
-            order_book.send_request_get_full_order_book();
+            order_book->send_request_get_full_order_book();
         }
     }
 
