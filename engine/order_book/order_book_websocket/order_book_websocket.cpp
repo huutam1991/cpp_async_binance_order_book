@@ -3,8 +3,8 @@
 #include <timer_new.h>
 #include <measure_time.h>
 
-OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, net::io_context& ioc, EventBase* event_base)
-    : m_symbol{symbol}, m_ioc{ioc}, m_event_base{event_base}
+OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, net::io_context& ioc, EventBase* event_base, std::function<void(std::string)> on_order_book_ws)
+    : m_symbol{symbol}, m_ioc{ioc}, m_event_base{event_base}, m_on_order_book_ws{on_order_book_ws}
 {
     std::string ws_path = "/ws/" + m_symbol + "@depth5@100ms";
 
@@ -20,6 +20,7 @@ OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, net::io_contex
         [this, symbol](std::string buffer) -> TaskVoid
         {
             MeasureTime t("depth handle", MeasureUnit::MICROSECOND);
+            m_on_order_book_ws(std::move(buffer));
  
             co_return;
         },

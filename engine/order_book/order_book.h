@@ -9,4 +9,6 @@ public:
 
 private:
     OrderBookWebsocket m_order_book_websocket;
+
+    void OnOrderbookWs(std::string data);
 };
