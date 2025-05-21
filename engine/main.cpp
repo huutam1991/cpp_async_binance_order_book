@@ -8,32 +8,35 @@
 
 #include <engine_constants.h>
 #include <order_book/order_book.h>
-#include <order_book/order_book_rest/order_book_rest.h>
 
 Task<int> async_main()
 {
     // Init Timer with ioc TIMER
     TimerNew::init(IOCPool::get_ioc_by_id(IOCId::TIMER));
 
-    // 
-    OrderBook order_book(
+    // BTCUSDT
+    OrderBook order_book_btcusdt(
         "btcusdt", 
+        1000,
         IOCPool::get_ioc_by_id(IOCId::MARKET_DATA), 
         EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW)
     );
 
-    // OrderBookRest
-    OrderBookRest order_book_rest(IOCPool::get_ioc_by_id(IOCId::MARKET_DATA), "fapi.binance.com", "443");
+    // ETHUSDT
+    OrderBook order_book_ethusdt(
+        "ethusdt", 
+        1000,
+        IOCPool::get_ioc_by_id(IOCId::MARKET_DATA), 
+        EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW)
+    );
 
-    // Loop to send REST request to query orderbook at every 5 seconds
+    // Loop to send REST request to query orderbook (full) at every 5 seconds
     while (true) 
     {
         co_await TimerNew::sleep_for(5000);
 
-        std::string str = co_await order_book_rest.get_order_book("btcusdt", 100);
-        Json order_book_data = Json::parse(str);
-
-        std::cout << "order_book_data: " << order_book_data << std::endl;
+        co_await order_book_btcusdt.send_request_get_order_book();
+        co_await order_book_ethusdt.send_request_get_order_book();
     }
 
     co_return 0;
