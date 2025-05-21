@@ -23,7 +23,7 @@ Task<int> async_main()
     );
 
     // OrderBookRest
-    OrderBookRest order_book_rest(IOCPool::get_ioc_by_id(IOCId::MARKET_DATA));
+    OrderBookRest order_book_rest(IOCPool::get_ioc_by_id(IOCId::MARKET_DATA), "fapi.binance.com", "443");
 
     // Loop to send REST request to query orderbook at every 5 seconds
     while (true) 
