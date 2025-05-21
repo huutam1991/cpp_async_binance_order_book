@@ -8,7 +8,7 @@
 
 #include <engine_constants.h>
 #include <order_book/order_book.h>
-#include <order_book/order_book_rest.h>
+#include <order_book/order_book_rest/order_book_rest.h>
 
 Task<int> async_main()
 {
