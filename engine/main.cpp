@@ -18,26 +18,26 @@ Task<int> async_main()
 
     // BTCUSDT
     order_book_list.push_back(std::make_unique<OrderBook>(
-        "btcusdt", 
-        1000,
-        IOCPool::get_ioc_by_id(IOCId::BTCUSDT), 
-        EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW)
+        "btcusdt",                                                     // symbol
+        10,                                                            // depth levels
+        IOCPool::get_ioc_by_id(IOCId::BTCUSDT),                        // io context (to use websocket, rest on boost, 1 io context running on 1 thread)
+        EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW) // event base for coroutine (1 event base running on 1 thread)
     ));
 
     // ETHUSDT
     order_book_list.push_back(std::make_unique<OrderBook>(
-        "ethusdt", 
-        1000,
-        IOCPool::get_ioc_by_id(IOCId::ETHUSDT), 
-        EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW)
+        "ethusdt",                                                     // symbol
+        10,                                                            // depth levels
+        IOCPool::get_ioc_by_id(IOCId::ETHUSDT),                        // io context (to use websocket, rest on boost, 1 io context running on 1 thread)
+        EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW) // event base for coroutine (1 event base running on 1 thread)
     ));
 
     // BNBUSDT
     order_book_list.push_back(std::make_unique<OrderBook>(
-        "bnbusdt", 
-        1000,
-        IOCPool::get_ioc_by_id(IOCId::BNBUSDT), 
-        EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW)
+        "bnbusdt",                                                     // symbol
+        10,                                                            // depth levels
+        IOCPool::get_ioc_by_id(IOCId::BNBUSDT),                        // io context (to use websocket, rest on boost, 1 io context running on 1 thread)
+        EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW) // event base for coroutine (1 event base running on 1 thread)
     ));
 
     // Loop to send REST request to query orderbook (full) at every 5 seconds

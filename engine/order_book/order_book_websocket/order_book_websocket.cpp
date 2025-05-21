@@ -3,10 +3,10 @@
 #include <timer_new.h>
 #include <measure_time.h>
 
-OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, net::io_context& ioc, EventBase* event_base, std::function<void(std::string)> on_order_book_ws)
-    : m_symbol{symbol}, m_ioc{ioc}, m_event_base{event_base}, m_on_order_book_ws{on_order_book_ws}
+OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, size_t depth_level, net::io_context& ioc, EventBase* event_base, std::function<void(std::string)> on_order_book_ws)
+    : m_symbol{symbol}, m_depth_level{depth_level}, m_ioc{ioc}, m_event_base{event_base}, m_on_order_book_ws{on_order_book_ws}
 {
-    std::string ws_path = "/ws/" + m_symbol + "@depth5@100ms";
+    std::string ws_path = "/ws/" + m_symbol + "@depth" + std::to_string(m_depth_level);
 
     m_websocket = std::make_shared<WebsocketClientAsync>(m_ioc, m_event_base);
     m_websocket->set_callbacks(

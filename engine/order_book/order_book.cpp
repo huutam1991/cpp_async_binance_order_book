@@ -6,6 +6,7 @@ OrderBook::OrderBook(const std::string& symbol, size_t depth_level, net::io_cont
       m_depth_level{depth_level},
       m_order_book_websocket{
           symbol, 
+          depth_level,
           ioc, 
           event_base, 
           [this](std::string data) { this->OnOrderbookWs(std::move(data)); }
