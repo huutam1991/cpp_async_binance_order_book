@@ -1,0 +1,49 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+cpp_async_binance_order_book
+cpp_async_binance_order_book_debug
+
+# Build folder
+build/
+debug/
+
+# # MongoDB data folder
+# z_docker/mongo_docker_data
+# z_docker/dump
+
+# Targets log
+.vscode/targets.log
+.vscode/settings.json
+
+
+# Front-end deploy folder
+# web_data/deploy/**
