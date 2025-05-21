@@ -5,32 +5,14 @@
 OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, net::io_context& ioc, EventBase* event_base)
     : m_symbol{symbol}, m_ioc{ioc}, m_event_base{event_base}
 {
-    m_websocket = std::make_shared<WebsocketClientAsync>(m_ioc, m_event_base);
+    std::string ws_path = "/ws/" + m_symbol + "@depth5@100ms";
 
+    m_websocket = std::make_shared<WebsocketClientAsync>(m_ioc, m_event_base);
     m_websocket->set_callbacks(
         // on_connect
-        [this, symbol, websocket = m_websocket]() -> TaskVoid
+        [this, ws_path]() -> TaskVoid
         {
-            // ADD_LOG("Binance websocket depth connected");
-
-            // Subcribe for depth
-            // size_t stream_id = get_stream_id_count();
-            // std::string lower_case_symbol = symbol;
-            // STRING_LOWER_CASE(lower_case_symbol);
-            // Json params;
-            // params[0] = "btcusdt@depth5@1000ms";
-
-            // // <symbol>@depth<levels>@100ms
-
-            // Json subcribe;
-            // subcribe["method"] = "SUBSCRIBE";
-            // subcribe["params"] = params;
-            // subcribe["id"] = 1;
-
-            // // ADD_LOG("subcribe = " << subcribe);
-
-            // websocket->send(subcribe.get_string_value());
-
+            std::cout << "Websocket [ws_path] is connected: " << std::endl;
             co_return;
         },
         // on_message
@@ -60,5 +42,5 @@ OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, net::io_contex
         }
     );
 
-    m_websocket->connect("fstream.binance.com", "443", "/ws/btcusdt@depth5@100ms");
+    m_websocket->connect("fstream.binance.com", "443", ws_path);
 }
