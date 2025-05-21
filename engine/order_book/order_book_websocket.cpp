@@ -1,5 +1,6 @@
 #include <order_book/order_book_websocket.h>
 #include <json/json.h>
+#include <measure_time.h>
 
 OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, net::io_context& ioc, EventBase* event_base)
     : m_symbol{symbol}, m_ioc{ioc}, m_event_base{event_base}
@@ -35,6 +36,7 @@ OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, net::io_contex
         // on_message
         [this, symbol](std::string buffer) -> TaskVoid
         {
+            MeasureTime t("depth handle", MeasureUnit::MICROSECOND);
             Json depth = Json::parse(buffer);
 
             std::cout << "depth: " << depth << std::endl;
