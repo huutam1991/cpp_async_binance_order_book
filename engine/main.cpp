@@ -30,10 +30,10 @@ Task<int> async_main()
     {
         co_await TimerNew::sleep_for(5000);
 
-        // std::string str = co_await order_book_rest.get_order_book("btcusdt", 3);
-        // Json order_book_data = Json::parse(str);
+        std::string str = co_await order_book_rest.get_order_book("btcusdt", 100);
+        Json order_book_data = Json::parse(str);
 
-        // std::cout << "order_book_data: " << order_book_data << std::endl;
+        std::cout << "order_book_data: " << order_book_data << std::endl;
     }
 
     co_return 0;

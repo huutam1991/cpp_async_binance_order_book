@@ -11,5 +11,5 @@ public:
     Task<std::string> get_order_book(const std::string& symbol, size_t depth);
 
 private:
-    HttpsClientAsync m_https_client_async;
+    std::shared_ptr<HttpsClientAsync> m_https_client_async;
 };
