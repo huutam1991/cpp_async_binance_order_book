@@ -8,27 +8,23 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -fcoroutines")
 find_package(OpenSSL REQUIRED)
 
 include_directories("/usr/local/lib")
-include_directories(core/include)
-include_directories(core/src)
 include_directories(core)
-include_directories(server_app/include)
-include_directories(server_app/src)
-include_directories(server_app)
+include_directories(engine)
 
 # Header files
 file (GLOB_RECURSE HEADER_FILES CONFIGURE_DEPENDS
     ${PROJECT_SOURCE_DIR}/core/*.h
     ${PROJECT_SOURCE_DIR}/core/*.hpp
-    ${PROJECT_SOURCE_DIR}/server_app/*.h
-    ${PROJECT_SOURCE_DIR}/server_app/*.hpp
+    ${PROJECT_SOURCE_DIR}/engine/*.h
+    ${PROJECT_SOURCE_DIR}/engine/*.hpp
 )
 
 # Source files
 file (GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
     ${PROJECT_SOURCE_DIR}/core/*.c
     ${PROJECT_SOURCE_DIR}/core/*.cpp
-    ${PROJECT_SOURCE_DIR}/server_app/*.c
-    ${PROJECT_SOURCE_DIR}/server_app/*.cpp
+    ${PROJECT_SOURCE_DIR}/engine/*.c
+    ${PROJECT_SOURCE_DIR}/engine/*.cpp
 )
 
 add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SRC_FILES})
