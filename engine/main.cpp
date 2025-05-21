@@ -40,15 +40,18 @@ Task<int> async_main()
         EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW) // event base for coroutine (1 event base running on 1 thread)
     ));
 
-    // Loop to send REST request to query orderbook (full) at every 60 seconds
+    // Loop to send REST request to query orderbook (full) at every 5 seconds, if the orderbook is not synced yet
     while (true) 
     {
         for (auto& order_book : order_book_list)
         {
-            co_await order_book->send_request_get_full_order_book();
+            if (order_book->is_not_synced())
+            {
+                co_await order_book->send_request_get_full_order_book();
+            }
         }
 
-        co_await Timer::sleep_for(60000);
+        co_await Timer::sleep_for(5000);
     }
 
     co_return 0;

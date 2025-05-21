@@ -23,6 +23,11 @@ TaskVoid OrderBook::send_request_get_full_order_book()
     co_return;
 }
 
+bool OrderBook::is_not_synced()
+{
+    return m_snapshot_loaded == false || m_ws_waiting_first_event == true;
+}
+
 void OrderBook::OnOrderbookWs(std::string data)
 {
     Json update = Json::parse(data);

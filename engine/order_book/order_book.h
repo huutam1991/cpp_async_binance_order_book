@@ -13,6 +13,8 @@ public:
     OrderBook(const std::string& symbol, size_t depth_level, net::io_context& ioc, EventBase* event_base);
     TaskVoid send_request_get_full_order_book();
 
+    bool is_not_synced();
+
 private:
     std::string m_symbol;
     size_t m_depth_level;
