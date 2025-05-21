@@ -47,7 +47,7 @@ Task<int> async_main()
 
         for (auto& order_book : order_book_list)
         {
-            order_book->send_request_get_full_order_book();
+            co_await order_book->send_request_get_full_order_book();
         }
     }
 
