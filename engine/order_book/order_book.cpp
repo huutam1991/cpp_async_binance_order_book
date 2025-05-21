@@ -32,7 +32,6 @@ void OrderBook::OnOrderbookWs(std::string data)
 void OrderBook::OnOrderbookRest(std::string data)
 {
     Json snapshot = Json::parse(data);
-    std::cout << "order book snapshot: " << snapshot << std::endl;
 
     uint64_t snapshot_id = snapshot["lastUpdateId"];
 
@@ -64,17 +63,18 @@ void OrderBook::apply_snapshot(Json& snapshsot)
         m_bids.insert(std::make_pair(price, quantity));
     });
 
-    std::cout << "asks: ";
+    
+    std::cout << "OrderBook update snapshot for symbol: " << m_symbol << std::endl;
+    std::cout << "asks: " << std::endl;
     for (auto& [price, quantity] : m_asks)
     {
-        std::cout << "[" << price << " - " << quantity << "], ";
+        std::cout << std::setprecision(15) << "[" << price << " - " << quantity << "], " << std::endl;
     }
-    std::cout << std::endl;
 
-    std::cout << "bids: ";
+    std::cout << "bids: " << std::endl;
     for (auto& [price, quantity] : m_bids)
     {
-        std::cout << "[" << price << " - " << quantity << "], ";
+        std::cout << std::setprecision(15) << "[" << price << " - " << quantity << "], " << std::endl;
     }
     std::cout << std::endl;
 }

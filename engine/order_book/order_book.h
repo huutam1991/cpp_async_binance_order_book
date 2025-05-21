@@ -20,8 +20,8 @@ private:
     OrderBookRest m_order_book_rest;
 
     // Bid, Ask
-    std::map<double, double> m_bids;
-    std::map<double, double> m_asks;
+    std::map<double, double, std::greater<double>> m_bids;
+    std::map<double, double, std::less<double>> m_asks;
 
     // Use for dedupe logic
     size_t m_snapshot_last_update_id = 0;
