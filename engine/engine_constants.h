@@ -9,7 +9,7 @@ enum IOCId
 
 enum EventBaseID
 {
-    MAIN_THREAD,
+    MAIN_FLOW,
     MARKET_DATA_EVB,
     ORDER,                   // OrderManager
     ORDER_DATA_MODEL_HELPER, // Help to save Order
