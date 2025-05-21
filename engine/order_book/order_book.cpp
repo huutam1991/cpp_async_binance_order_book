@@ -13,7 +13,7 @@ OrderBook::OrderBook(const std::string& symbol, size_t depth_level, net::io_cont
       m_order_book_rest{ioc}
 {}
 
-TaskVoid OrderBook::send_request_get_order_book()
+TaskVoid OrderBook::send_request_get_full_order_book()
 {
     std::string data = co_await m_order_book_rest.get_order_book(m_symbol, m_depth_level);
 

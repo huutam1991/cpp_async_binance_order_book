@@ -14,19 +14,21 @@ Task<int> async_main()
     // Init Timer with ioc TIMER
     TimerNew::init(IOCPool::get_ioc_by_id(IOCId::TIMER));
 
+    std::vector<OrderBook> order_book_list;
+
     // BTCUSDT
-    OrderBook order_book_btcusdt(
+    order_book_list.emplace_back(
         "btcusdt", 
         1000,
-        IOCPool::get_ioc_by_id(IOCId::MARKET_DATA), 
+        IOCPool::get_ioc_by_id(IOCId::BTCUSDT), 
         EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW)
     );
 
     // ETHUSDT
-    OrderBook order_book_ethusdt(
+    order_book_list.emplace_back(
         "ethusdt", 
         1000,
-        IOCPool::get_ioc_by_id(IOCId::MARKET_DATA), 
+        IOCPool::get_ioc_by_id(IOCId::ETHUSDT), 
         EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW)
     );
 
@@ -35,8 +37,10 @@ Task<int> async_main()
     {
         co_await TimerNew::sleep_for(5000);
 
-        co_await order_book_btcusdt.send_request_get_order_book();
-        co_await order_book_ethusdt.send_request_get_order_book();
+        for (auto& order_book : order_book_list)
+        {
+            order_book.send_request_get_full_order_book();
+        }
     }
 
     co_return 0;

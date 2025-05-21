@@ -9,7 +9,7 @@ class OrderBook
 {
 public:
     OrderBook(const std::string& symbol, size_t depth_level, net::io_context& ioc, EventBase* event_base);
-    TaskVoid send_request_get_order_book();
+    TaskVoid send_request_get_full_order_book();
 
 private:
     std::string m_symbol;

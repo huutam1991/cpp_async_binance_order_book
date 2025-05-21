@@ -3,16 +3,13 @@
 enum IOCId
 {
     TIMER,
-    MARKET_DATA,
-    ORDER_ENTRY, 
+    BTCUSDT,
+    ETHUSDT,
+    BNBUSDT,
 };
 
 enum EventBaseID
 {
     MAIN_FLOW,
-    MARKET_DATA_EVB,
-    ORDER,                   // OrderManager
-    ORDER_DATA_MODEL_HELPER, // Help to save Order
-    GATEWAY,                 // Gateway
     STRATEGY                 // Strategy
 };
