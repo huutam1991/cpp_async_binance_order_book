@@ -5,7 +5,6 @@
 #include <vector>
 #include <unordered_map>
 
-#include <util_macros.h>
 #include "event_base.h"
 
 class EventBaseManager

@@ -10,6 +10,7 @@ enum IOCId
 enum EventBaseID
 {
     ORDERBOOK_ENGINE,
+    MARKET_DATA_EVB,
     ORDER,                   // OrderManager
     ORDER_DATA_MODEL_HELPER, // Help to save Order
     GATEWAY,                 // Gateway
