@@ -25,8 +25,79 @@ TaskVoid OrderBook::send_request_get_full_order_book()
 
 void OrderBook::OnOrderbookWs(std::string data)
 {
-    Json order_book = Json::parse(data);
-    // std::cout << "order book: " << order_book << std::endl;
+    Json update = Json::parse(data);
+
+    uint64_t pu = update["pu"];
+    uint64_t u  = update["u"];
+    uint64_t U  = update["U"];
+
+    if (!m_snapshot_loaded) 
+    {
+        std::cout << "[WS] symbol: [" << m_symbol << "], Snapshot not loaded — skipping update\n";
+        return;
+    }
+
+    if (m_ws_waiting_first_event) 
+    {
+        if (U <= m_ws_last_update_id && u >= m_ws_last_update_id) 
+        {
+            m_ws_waiting_first_event = false;
+            m_ws_last_update_id = u; // Sync from here
+            std::cout << "[WS] symbol: [" << m_symbol << "], First valid event applied: U=" << U << ", u=" << u << "\n";
+        } 
+        else 
+        {
+            std::cout << "[WS] symbol: [" << m_symbol << "], Waiting for first valid event. Got U=" << U << ", u=" << u
+                      << ", expected to cover lastUpdateId=" << m_ws_last_update_id << "\n";
+            return;
+        }
+    } 
+    else 
+    {
+        // Only after sync is started, we enforce pu == lastUpdateId
+        if (pu != m_ws_last_update_id) 
+        {
+            std::cout << "[WS] symbol: [" << m_symbol << "], Update chain broken: pu=" << pu << ", expected=" << m_ws_last_update_id
+                      << " -> triggering snapshot reload\n";
+            m_snapshot_loaded = false;
+            m_ws_waiting_first_event = true;
+            return;
+        }
+
+        m_ws_last_update_id = u;
+    }
+
+    // Apply asks
+    update["a"].for_each([this](Json& level) 
+    {
+        double price = std::stod((std::string)level[0]);
+        double quantity = std::stod((std::string)level[1]);
+        if (quantity == 0.0)
+        {
+            m_asks.erase(price);
+        }
+        else
+        {
+            m_asks[price] = quantity;
+        }
+    });
+
+    // Apply bids
+    update["b"].for_each([this](Json& level) 
+    {
+        double price = std::stod((std::string)level[0]);
+        double quantity = std::stod((std::string)level[1]);
+        if (quantity == 0.0)
+        {
+            m_bids.erase(price);
+        }
+        else
+        {
+            m_bids[price] = quantity;
+        }
+    });
+
+    std::cout << "[WS] symbol: [" << m_symbol << "], Update applied successfully: u=" << u << "\n";
 }
 
 void OrderBook::OnOrderbookRest(std::string data)
@@ -63,18 +134,22 @@ void OrderBook::apply_snapshot(Json& snapshsot)
         m_bids.insert(std::make_pair(price, quantity));
     });
 
-    
-    std::cout << "OrderBook update snapshot for symbol: " << m_symbol << std::endl;
-    std::cout << "asks: " << std::endl;
+    m_snapshot_loaded = true;
+    m_ws_waiting_first_event = true;
+    m_ws_last_update_id = m_snapshot_last_update_id;
+
+    // Print logs
+    std::cout << "[Rest] OrderBook update snapshot for symbol: " << m_symbol << std::endl;
+    std::cout << "[Rest] asks: " << std::endl;
     for (auto& [price, quantity] : m_asks)
     {
-        std::cout << std::setprecision(15) << "[" << price << " - " << quantity << "], " << std::endl;
+        std::cout << std::setprecision(15) << "[Rest] [" << price << " - " << quantity << "], " << std::endl;
     }
 
-    std::cout << "bids: " << std::endl;
+    std::cout << "[Rest] bids: " << std::endl;
     for (auto& [price, quantity] : m_bids)
     {
-        std::cout << std::setprecision(15) << "[" << price << " - " << quantity << "], " << std::endl;
+        std::cout << std::setprecision(15) << "[Rest] [" << price << " - " << quantity << "], " << std::endl;
     }
     std::cout << std::endl;
 }
