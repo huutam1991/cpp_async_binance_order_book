@@ -1,5 +1,6 @@
 #include <order_book/order_book_websocket/order_book_websocket.h>
 #include <json/json.h>
+#include <timer_new.h>
 #include <measure_time.h>
 
 OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, net::io_context& ioc, EventBase* event_base)
@@ -19,9 +20,6 @@ OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, net::io_contex
         [this, symbol](std::string buffer) -> TaskVoid
         {
             MeasureTime t("depth handle", MeasureUnit::MICROSECOND);
-            Json depth = Json::parse(buffer);
-
-            std::cout << "depth: " << depth << std::endl;
  
             co_return;
         },
@@ -43,4 +41,18 @@ OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, net::io_contex
     );
 
     m_websocket->connect("fstream.binance.com", "443", ws_path);
+
+    // Start task to keep websocket alive
+    keep_websocket_alive().start_running_on(m_event_base);
+}
+
+TaskVoid OrderBookWebsocket::keep_websocket_alive()
+{
+    // Send ping at every 30 second to keep websocket alive
+    while (true)
+    {
+        co_await TimerNew::sleep_for(30000);
+        m_websocket->send_ping();
+    }
+    
 }

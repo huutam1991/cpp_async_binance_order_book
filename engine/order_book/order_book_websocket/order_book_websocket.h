@@ -17,5 +17,7 @@ private:
     EventBase* m_event_base;
 
     std::shared_ptr<WebsocketClientAsync> m_websocket;
+
+    TaskVoid keep_websocket_alive();
     
 };
