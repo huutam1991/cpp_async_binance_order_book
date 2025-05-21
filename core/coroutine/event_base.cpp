@@ -8,7 +8,7 @@ uint64_t EventBase::add_to_event_base(std::coroutine_handle<> handle, void* base
     uint64_t id = get_event_id();
     m_task_list.insert(std::make_pair(id, TaskInfo {handle, base_promise_type_address}));
 
-    std::cout << "EventBase: " << m_event_base_id << ", Total task list remaining - add: " << m_task_list.size() << std::endl;
+    // std::cout << "EventBase: " << m_event_base_id << ", Total task list remaining - add: " << m_task_list.size() << std::endl;
 
     return id;
 }
@@ -21,7 +21,7 @@ void EventBase::remove_from_event_base(uint64_t id)
         m_task_list.erase(id);
     }
 
-    std::cout << "EventBase: " << m_event_base_id << ", Total task list remaining: " << m_task_list.size() << std::endl;
+    // std::cout << "EventBase: " << m_event_base_id << ", Total task list remaining: " << m_task_list.size() << std::endl;
 }
 
 
