@@ -1,6 +1,6 @@
 #include <order_book/order_book_websocket/order_book_websocket.h>
 #include <json/json.h>
-#include <timer_new.h>
+#include <timer.h>
 #include <measure_time.h>
 
 OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, size_t depth_level, net::io_context& ioc, EventBase* event_base, std::function<void(std::string)> on_order_book_ws)
@@ -52,7 +52,7 @@ TaskVoid OrderBookWebsocket::keep_websocket_alive()
     // Send ping at every 30 second to keep websocket alive
     while (true)
     {
-        co_await TimerNew::sleep_for(30000);
+        co_await Timer::sleep_for(30000);
         m_websocket->send_ping();
     }
     

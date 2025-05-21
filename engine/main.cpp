@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <timer_new.h>
+#include <timer.h>
 #include <ioc_pool.h>
 #include <json/json.h>
 #include <coroutine/task.h>
@@ -12,7 +12,7 @@
 Task<int> async_main()
 {
     // Init Timer with ioc TIMER
-    TimerNew::init(IOCPool::get_ioc_by_id(IOCId::TIMER));
+    Timer::init(IOCPool::get_ioc_by_id(IOCId::TIMER));
 
     std::vector<std::unique_ptr<OrderBook>> order_book_list;
 
@@ -43,7 +43,7 @@ Task<int> async_main()
     // Loop to send REST request to query orderbook (full) at every 5 seconds
     while (true) 
     {
-        co_await TimerNew::sleep_for(5000);
+        co_await Timer::sleep_for(5000);
 
         for (auto& order_book : order_book_list)
         {
