@@ -1,0 +1,3 @@
+/home/huutam1991/projects/personal/cpp_async_binance_order_book/build/CMakeFiles/cpp_async_binance_order_book.dir
+/home/huutam1991/projects/personal/cpp_async_binance_order_book/build/CMakeFiles/edit_cache.dir
+/home/huutam1991/projects/personal/cpp_async_binance_order_book/build/CMakeFiles/rebuild_cache.dir
