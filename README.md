@@ -70,17 +70,17 @@ However, the data returned is handled sequentially on a single thread (`EventBas
 Y-axis: CPU thread per symbol
 X-axis: Time ---->
 
-CPU Thread 1 - IO context (BTCUSDT):
+CPU Thread 1 - Boost IO context (BTCUSDT):
     ┌──────────────┬────────────┬────────────┬────────────┐
     │ WS read task │ REST poll  │ WS read    │ REST poll  │
     └──────────────┴────────────┴────────────┴────────────┘
 
-CPU Thread 2 - IO context (ETHUSDT):
+CPU Thread 2 - Boost IO context (ETHUSDT):
     ┌──────────────┬────────────┬────────────┐
     │ WS read task │ WS read    │ REST poll  │
     └──────────────┴────────────┴────────────┘
 
-CPU Thread 3 - IO context (BNBUSDT):
+CPU Thread 3 - Boost IO context (BNBUSDT):
     ┌──────────────┬────────────┬────────────┐
     │ REST poll    │ WS read    │ REST poll  │
     └──────────────┴────────────┴────────────┘
