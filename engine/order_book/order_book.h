@@ -35,4 +35,5 @@ private:
     void OnOrderbookRest(std::string data);
 
     void apply_snapshot(Json& snapshsot);
+    void print_order_book();
 };

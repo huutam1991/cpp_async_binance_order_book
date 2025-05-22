@@ -19,7 +19,7 @@ OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, size_t depth_l
         // on_message
         [this, symbol](std::string buffer) -> TaskVoid
         {
-            MeasureTime t("depth handle", MeasureUnit::MICROSECOND);
+            MeasureTime t("Depth data handle from websocket", MeasureUnit::MICROSECOND);
             m_on_order_book_ws(std::move(buffer));
  
             co_return;

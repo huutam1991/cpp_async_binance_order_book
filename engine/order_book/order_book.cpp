@@ -144,6 +144,11 @@ void OrderBook::apply_snapshot(Json& snapshsot)
     m_ws_last_update_id = m_snapshot_last_update_id;
 
     // Print logs
+    print_order_book();
+}
+
+void OrderBook::print_order_book()
+{
     std::cout << "[Rest] OrderBook update snapshot for symbol: " << m_symbol << std::endl;
     std::cout << "[Rest] asks: " << std::endl;
     for (auto& [price, quantity] : m_asks)
