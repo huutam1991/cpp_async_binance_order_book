@@ -22,12 +22,12 @@ private:
     OrderBookRest m_order_book_rest;
 
     // Bid, Ask
-    bool m_snapshot_loaded = false;
-    bool m_ws_waiting_first_event = true;
     std::map<double, double, std::greater<double>> m_bids;
     std::map<double, double, std::less<double>> m_asks;
 
-    // Use for dedupe logic
+    // For logic to apply orderbook's updates
+    bool m_snapshot_loaded = false;
+    bool m_ws_waiting_first_event = true;
     size_t m_snapshot_last_update_id = 0;
     size_t m_ws_last_update_id = 0;
 

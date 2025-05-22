@@ -1,4 +1,5 @@
 #include <order_book/order_book.h>
+#include <dedupe_checker.h>
 
 OrderBook::OrderBook(const std::string& symbol, size_t depth_level, net::io_context& ioc, EventBase* event_base)
     : m_symbol{symbol},
@@ -30,6 +31,12 @@ bool OrderBook::is_not_synced()
 
 void OrderBook::OnOrderbookWs(std::string data)
 {
+    if (DedupeChecker::is_duplicate(data) == true) 
+    {
+        std::cout << "[WS] data is duplicate: " << data << std::endl;
+        return;
+    }
+    
     Json update = Json::parse(data);
 
     uint64_t pu = update["pu"];
@@ -107,6 +114,12 @@ void OrderBook::OnOrderbookWs(std::string data)
 
 void OrderBook::OnOrderbookRest(std::string data)
 {
+    if (DedupeChecker::is_duplicate(data) == true) 
+    {
+        std::cout << "[Rest] data is duplicate: " << data << std::endl;
+        return;
+    }
+
     Json snapshot = Json::parse(data);
 
     uint64_t snapshot_id = snapshot["lastUpdateId"];
