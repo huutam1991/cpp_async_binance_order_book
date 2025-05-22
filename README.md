@@ -60,3 +60,33 @@ Run the setup script to install dependencies: `cmake`, `openssl`, `boost`
 ```bash
 ./run_bash.sh
 ```
+
+## Assignment 1b
+### Diagram
+Each symbol runs on its own dedicated `Boost I/O context` thread for both `WebSocket` and `REST` operations.
+However, the data returned is handled sequentially on a single thread (`EventBaseID::MAIN_FLOW`) using the `coroutine system`, so there is no blocking.
+
+```
+Y-axis: CPU thread per symbol
+X-axis: Time ---->
+
+CPU Thread 1 - IO context (BTCUSDT):
+    ┌──────────────┬────────────┬────────────┬────────────┐
+    │ WS read task │ REST poll  │ WS read    │ REST poll  │
+    └──────────────┴────────────┴────────────┴────────────┘
+
+CPU Thread 2 - IO context (ETHUSDT):
+    ┌──────────────┬────────────┬────────────┐
+    │ WS read task │ WS read    │ REST poll  │
+    └──────────────┴────────────┴────────────┘
+
+CPU Thread 3 - IO context (BNBUSDT):
+    ┌──────────────┬────────────┬────────────┐
+    │ REST poll    │ WS read    │ REST poll  │
+    └──────────────┴────────────┴────────────┘
+
+CPU Thread 4 - coroutine (EventBaseID::MAIN_FLOW):
+    ┌─────────────────────────┬───────────────────────────┬─────────────────────────┐
+    │ OnOrderbookWs (BTCUSDT) │ OnOrderbookRest (ETHUSDT) │ OnOrderbookWs (BNBUSDT) │
+    └─────────────────────────┴───────────────────────────┴─────────────────────────┘
+```
