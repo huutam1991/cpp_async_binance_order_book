@@ -62,7 +62,7 @@ Run the setup script to install dependencies: `cmake`, `openssl`, `boost`
 ```
 
 ## Assignment 1b
-### Diagram
+### 1. Diagram
 Each symbol runs on its own dedicated `Boost I/O context` thread for both `WebSocket` and `REST` operations.
 However, the data returned is handled sequentially on a single thread (`EventBaseID::MAIN_FLOW`) using the `coroutine system`, so there is no blocking.
 
@@ -90,3 +90,23 @@ CPU Thread 4 - coroutine (EventBaseID::MAIN_FLOW):
     │ OnOrderbookWs (BTCUSDT) │ OnOrderbookRest (ETHUSDT) │ OnOrderbookWs (BNBUSDT) │
     └─────────────────────────┴───────────────────────────┴─────────────────────────┘
 ```
+
+### 2. Potential Bottlenecks & Monitoring Targets
+
+**Bottlenecks:**
+1. **Coroutine thread overload:** All callbacks (`OnOrderbookWs`, `OnOrderbookRest`) run on a single coroutine thread (`EventBaseID::MAIN_FLOW`). At high symbol or message volume, this becomes a bottleneck.
+2. **REST snapshot delays:** Broken update chains trigger full snapshot reloads. These depend on network conditions and may block book synchronization.
+
+**What to monitor:**
+- Latency between receiving and applying WebSocket messages.
+- Frequency of snapshot reloads due to `pu ≠ lastUpdateId`.
+
+### 3. Latency Improvements (If Given More Time)
+1. **Switch to a high-performance JSON parser:**  
+   Replace the custom JSON parser with libraries like [simdjson](https://github.com/simdjson/simdjson) or [RapidJSON](https://github.com/Tencent/rapidjson) to significantly reduce parsing latency for both WebSocket and REST data.
+
+2. **Pin threads to CPU cores:**  
+   Bind each `io_context` thread and the coroutine thread (`EventBaseID::MAIN_FLOW`) to dedicated CPU cores to reduce context switching and improve cache locality.
+
+3. **Implement keep-alive for REST requests:**  
+   Maintain persistent HTTP connections using the `Connection: keep-alive` header to avoid repeated TCP handshakes and TLS handshakes for each REST poll, reducing latency and system overhead.
