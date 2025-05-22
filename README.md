@@ -5,7 +5,7 @@ I use my own custom-built **coroutine model** and **json class** in this project
 - [`coroutine`](core/coroutine): lightweight, simple, and extremely fast — designed specifically for high-performance asynchronous tasks.
 - [`json`](core/json) while not as fast as libraries like RapidJSON, nlohmann, simdjson, ... but I deliberately used it in this project (together with my coroutine model) to demonstrate that I am capable of building complex features from scratch
 
-## Assignment Requirements & How They Are Fulfilled
+## Assignment 1a Requirements & How They Are Fulfilled
 
 ### 1. WebSocket Subscription (Asynchronous)
 - **Implemented in:** [`order_book_websocket.cpp/`](engine/order_book/order_book_websocket/order_book_websocket.cpp) (`engine`), [`websocket_client_async.cpp`](core/websocket/websocket_client_async.cpp) (`core`)
@@ -33,8 +33,8 @@ I use my own custom-built **coroutine model** and **json class** in this project
 - **Timer:** Non-blocking scheduling using [`sleep_for()`](https://github.com/huutam1991/cpp_async_binance_order_book/blob/d9962cb1f6ea812caceb66eb965536f23835f3eb/engine/main.cpp#L54) without spinning. 
 
 ### 6. Required Callback Names
-- `OnOrderbookWs(std::string data)`
-- `OnOrderbookRest(std::string data)`
+- [`OnOrderbookWs(std::string data)`](https://github.com/huutam1991/cpp_async_binance_order_book/blob/d9962cb1f6ea812caceb66eb965536f23835f3eb/engine/order_book/order_book.cpp#L33) 
+- [`OnOrderbookRest(std::string data)`](https://github.com/huutam1991/cpp_async_binance_order_book/blob/d9962cb1f6ea812caceb66eb965536f23835f3eb/engine/order_book/order_book.cpp#L116) 
 
 Both functions are implemented in `order_book.cpp`, with deduplication and state update logic built-in.
 
