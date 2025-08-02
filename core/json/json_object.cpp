@@ -1,181 +1,96 @@
-#include <utility>
-
 #include <json/json_object.h>
-#include <json/json_value.h>
 
-JsonObject::JsonObject()
+
+void JsonObject::for_each(std::function<void(Json&)>& loop_func)
 {
-}
-
-JsonObject::~JsonObject()
-{
-}
-
-Json& get_object_value(const std::string& key, std::unordered_map<std::string, Json>& object)
-{
-    auto it = object.find(key);
-
-    if (it != object.end())
-    {
-        return it->second;
-    }
-    else
-    {
-        object.insert(std::make_pair(key, Json()));
-        return object[key];
-    }
-}
-
-Json& get_object_value(size_t index, std::vector<Json>& array)
-{
-    if (index >= array.size())
-    {
-        array.resize(index + 1);
-    }
-
-    return array[index];
-}
-
-Json& JsonObject::operator[](const std::string& key)
-{
-    return get_object_value(key, m_object);
-}
-
-Json& JsonObject::operator[](int index)
-{
-    return get_object_value(index, m_array);
-}
-
-const std::string JsonObject::get_string_value() const
-{
-    std::string res;
-    size_t size = m_is_object ? m_object.size() : m_array.size();
-    int counter = 0;
-
-    if (m_is_object == true)
-    {
-        res.append("{");
-        for (auto it = m_object.begin(); it != m_object.end(); it++)
-        {
-            res.append("\"" + it->first + "\"");
-            res.append(":");
-            res.append(it->second.get_string_value());
-
-            if (++counter < size) res.append(",");
-        }
-        res.append("}");
-    }
-    else
-    {
-        res.append("[");
-        for (int i = 0; i < size; i++)
-        {
-            res.append(m_array[i].get_string_value());
-
-            if (++counter < size) res.append(",");
-        }
-        res.append("]");
-    }
-
-    return res;
-}
-
-std::shared_ptr<JsonTypeBase> JsonObject::get_clone(const std::shared_ptr<JsonTypeBase>& ptr)
-{
-    std::shared_ptr<JsonTypeBase> res = ptr;
-    return res;
-}
-
-Json JsonObject::value_clone()
-{
-    Json res;
-
-    // Object clone
-    if (m_is_object == true)
+    // Loop through object
+    if (m_is_array == false)
     {
         for (auto it = m_object.begin(); it != m_object.end(); it++)
         {
-            res[it->first] = it->second;
+            loop_func(it->second);
         }
     }
-    // Array clone
+    // Loop through array
     else
     {
-        res = Json::create_array();
-        res.set_size(m_array.size());
-
-        for (int i = 0; i < m_array.size(); i++)
+        for (auto it = m_array.begin(); it != m_array.end(); it++)
         {
-            res[i] = m_array[i];
+            loop_func(*it);
         }
     }
-
-    return res;
 }
 
-Json JsonObject::deep_clone()
+void JsonObject::for_each_with_key(std::function<void(const std::string&, Json&)>& loop_func)
 {
-    Json res;
-
-    // Object clone
-    if (m_is_object == true)
+    if (m_is_array == false)
     {
+        // Loop through object
         for (auto it = m_object.begin(); it != m_object.end(); it++)
         {
-            res[it->first] = it->second.deep_clone();
+            loop_func(it->first, it->second);
         }
     }
-    // Array clone
+}
+
+void JsonObject::for_each_with_index(std::function<void(size_t,Json&)>& loop_func)
+{
+    if (m_is_array == true)
+    {
+        for (size_t i = 0; i < m_array.size(); i++)
+        {
+            loop_func(i, m_array[i]);
+        }
+    }
+}
+
+void JsonObject::write_string_value(JsonStringBuilder& builder)
+{
+    if (m_is_array)
+    {
+        builder.write_char('[');
+        for (size_t i = 0; i < m_array.size(); ++i)
+        {
+            if (i > 0) builder.write_char(',');
+            m_array[i].write_string_value(builder);
+        }
+        builder.write_char(']');
+    }
     else
     {
-        res = Json::create_array();
-        res.set_size(m_array.size());
-
-        for (int i = 0; i < m_array.size(); i++)
+        std::string result = "{";
+        builder.write_char('{');
+        int count = 0;
+        for (const auto& [key, value] : m_object)
         {
-            res[i] = m_array[i].deep_clone();
+            if (count++ > 0) builder.write_char(',');
+            builder.write_char('\"');
+            builder.write_raw(key.data(), key.size());
+            builder.write_char('\"');
+            builder.write_char(':');
+            value.write_string_value(builder);
         }
+        builder.write_char('}');
     }
-
-    return res;
 }
 
-void JsonObject::remove_field(const std::string& field)
+JsonTypeBase* JsonObject::get_deep_clone()
 {
-    if (m_is_object == true)
+    JsonObject* clone = JsonObjectPool::acquire();
+    clone->m_is_array = m_is_array;
+
+    // Deep clone the array
+    clone->m_array.reserve(m_array.size());
+    for (auto& item : m_array)
     {
-        m_object.erase(field);
+        clone->m_array.push_back(item.deep_clone());
     }
-}
 
-bool JsonObject::has_field(const std::string& field)
-{
-    if (m_is_object == true)
+    // Deep clone the object
+    for (auto& [key, value] : m_object)
     {
-        auto it = m_object.find(field);
-        return it != m_object.end();
+        clone->m_object[key] = value.deep_clone();
     }
 
-    return false;
-}
-
-bool JsonObject::is_array()
-{
-    return !m_is_object;
-}
-
-void JsonObject::set_size(size_t size)
-{
-    m_array.resize(size);
-}
-
-int JsonObject::size()
-{
-    return m_is_object ? m_object.size() : m_array.size();
-}
-
-template<>
-void JsonObject::push_back(const Json& value)
-{
-    m_array.push_back(value);
+    return clone;
 }

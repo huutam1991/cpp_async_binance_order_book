@@ -1,73 +1,91 @@
+#include <charconv>
 #include <json/json_value.h>
-#include <json/json.h>
 
-#include <ios>
-#include <iomanip>
-
-// const char*
 template<>
-const std::string JsonValue<const char*>::get_string_value() const
+JsonValue::operator std::string() const
 {
-    std::string value(m_value);
-    if (m_is_string_format == true)
+    if (std::holds_alternative<ShareString>(m_value))
     {
-        return std::string("\"" + value + "\"");
+        std::string_view str_view = std::get<ShareString>(m_value).data();
+        return std::string(str_view);
     }
-    return value;
-}
-
-// std::string
-template<>
-const std::string JsonValue<std::string>::get_string_value() const
-{
-    if (m_is_string_format == true)
+    else
     {
-        return std::string("\"" + m_value + "\"");
+        return {};
     }
-    return m_value;
 }
 
-// bool
-template<>
-const std::string JsonValue<bool>::get_string_value() const
+void JsonValue::write_string_value(JsonStringBuilder& builder)
 {
-    return std::string(m_value == true ? "true" : "false");
-}
-
-// floating point types
-template<>
-const std::string JsonValue<long double>::get_string_value() const
-{
-    std::stringstream ss;
-    std::string res;
-    ss << std::fixed << std::setprecision(10) << m_value;
-    ss >> res;
-    return res;
-}
-
-template<>
-const std::string JsonValue<double>::get_string_value() const
-{
-    std::stringstream ss;
-    std::string res;
-    ss << std::fixed << std::setprecision(10) << m_value;
-    ss >> res;
-    return res;
-}
-
-template<>
-const std::string JsonValue<float>::get_string_value() const
-{
-    std::stringstream ss;
-    std::string res;
-    ss << std::fixed << std::setprecision(10) << m_value;
-    ss >> res;
-    return res;
-}
-
-// JsonNull
-template<>
-const std::string JsonValue<JsonNull>::get_string_value() const
-{
-    return std::string("null");
+    std::visit([this, &builder](auto&& arg) -> void
+    {
+        using U = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<U, std::nullptr_t>)
+        {
+            builder.write_raw("null", 4);
+        }
+        else if constexpr (std::is_same_v<U, bool>)
+        {
+            if (arg)
+            {
+                builder.write_raw("true", 4);
+            }
+            else
+            {
+                builder.write_raw("false", 5);
+            }
+        }
+        else if constexpr (std::is_arithmetic_v<U>)
+        {
+            auto [ptr, ec] = std::to_chars(buffer_number, buffer_number + sizeof(buffer_number), arg);
+            if (ec == std::errc{})
+            {
+                builder.write_raw(buffer_number, ptr - buffer_number);
+            }
+        }
+        else if constexpr (std::is_same_v<U, ShareString>)
+        {
+            std::string_view str_view = arg.data();
+            if (m_is_string_format)
+            {
+                builder.write_char('\"');
+                builder.write_raw(str_view.data(), str_view.size());
+                builder.write_char('\"');
+            }
+            else
+            {
+                builder.write_raw(str_view.data(), str_view.size());
+            }
+        }
+        else if constexpr (std::is_same_v<U, std::string_view>)
+        {
+            if (m_is_string_format)
+            {
+                builder.write_char('\"');
+                builder.write_raw(arg.data(), arg.size());
+                builder.write_char('\"');
+            }
+            else
+            {
+                builder.write_raw(arg.data(), arg.size());
+            }
+        }
+        else if constexpr (std::is_same_v<U, const char*>)
+        {
+            if (m_is_string_format)
+            {
+                builder.write_char('\"');
+                builder.write_raw(arg, std::strlen(arg));
+                builder.write_char('\"');
+            }
+            else
+            {
+                builder.write_raw(arg, std::strlen(arg));
+            }
+        }
+        else
+        {
+            builder.write_raw("<unsupported>", 13);
+        }
+    }, m_value);
 }

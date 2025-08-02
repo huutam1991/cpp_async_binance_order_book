@@ -3,6 +3,8 @@
 #include <string>
 #include <memory>
 
+#include <json/json_string_builder.h>
+
 class JsonTypeBase
 {
 protected:
@@ -13,6 +15,8 @@ public:
     virtual ~JsonTypeBase() {};
 
     virtual bool is_json_value() = 0;
-    virtual const std::string get_string_value() const = 0;
-    virtual std::shared_ptr<JsonTypeBase> get_clone(const std::shared_ptr<JsonTypeBase>&) = 0;
+    virtual void write_string_value(JsonStringBuilder& builder) = 0;
+    virtual JsonTypeBase* get_copy() = 0;
+    virtual JsonTypeBase* get_deep_clone() = 0;
+    virtual void release() = 0;
 };
