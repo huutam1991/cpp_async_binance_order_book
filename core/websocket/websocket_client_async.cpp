@@ -16,7 +16,7 @@ WebsocketClientAsync::~WebsocketClientAsync()
     std::cout << "Close WebsocketClientAsync" << std::endl;
 }
 
-void WebsocketClientAsync::set_callbacks(std::function<TaskVoid()> on_connect, std::function<TaskVoid(std::string)> on_message, std::function<TaskVoid()> on_disconnect, std::function<TaskVoid()> on_close)
+void WebsocketClientAsync::set_callbacks(std::function<Task<void>()> on_connect, std::function<Task<void>(std::string)> on_message, std::function<Task<void>()> on_disconnect, std::function<Task<void>()> on_close)
 {
     m_on_connect = std::move(on_connect);
     m_on_message = std::move(on_message);

@@ -21,7 +21,7 @@ Task<int> async_main()
         "btcusdt",                                                     // symbol
         10,                                                            // depth levels
         IOCPool::get_ioc_by_id(IOCId::BTCUSDT),                        // io context (to use websocket, rest on boost, 1 io context running on 1 thread)
-        EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW) // event base for coroutine (1 event base running on 1 thread)
+        EventBaseManager::get_event_base_by_id(EventBaseID::MARKET_MAKER_STRATEGY) // event base for coroutine (1 event base running on 1 thread)
     ));
 
     // ETHUSDT
@@ -29,7 +29,7 @@ Task<int> async_main()
         "ethusdt",                                                     // symbol
         10,                                                            // depth levels
         IOCPool::get_ioc_by_id(IOCId::ETHUSDT),                        // io context (to use websocket, rest on boost, 1 io context running on 1 thread)
-        EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW) // event base for coroutine (1 event base running on 1 thread)
+        EventBaseManager::get_event_base_by_id(EventBaseID::MARKET_MAKER_STRATEGY) // event base for coroutine (1 event base running on 1 thread)
     ));
 
     // BNBUSDT
@@ -37,11 +37,11 @@ Task<int> async_main()
         "bnbusdt",                                                     // symbol
         10,                                                            // depth levels
         IOCPool::get_ioc_by_id(IOCId::BNBUSDT),                        // io context (to use websocket, rest on boost, 1 io context running on 1 thread)
-        EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW) // event base for coroutine (1 event base running on 1 thread)
+        EventBaseManager::get_event_base_by_id(EventBaseID::MARKET_MAKER_STRATEGY) // event base for coroutine (1 event base running on 1 thread)
     ));
 
     // Loop to send REST request to query orderbook (full) at every 5 seconds, if the orderbook is not synced yet
-    while (true) 
+    while (true)
     {
         for (auto& order_book : order_book_list)
         {
@@ -57,11 +57,11 @@ Task<int> async_main()
     co_return 0;
 }
 
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
     // Run async_main()
     auto task = async_main();
-    auto async_run = task.start_running_on(EventBaseManager::get_event_base_by_id(EventBaseID::MAIN_FLOW));
+    auto async_run = task.start_running_on(EventBaseManager::get_event_base_by_id(EventBaseID::MARKET_MAKER_STRATEGY));
     int result = async_run.get();
 
     return result;

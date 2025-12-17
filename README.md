@@ -29,12 +29,12 @@ I use my own custom-built **coroutine model** and **json class** in this project
 
 ### 5. CPU Efficiency
 - **Horizontal split:** Each symbol's I/O context runs on a dedicated thread.
-- **Coroutines:** Avoids busy-waiting and blocking, all of handling logic run on 1 thread with `EventBaseID` is: [`EventBaseID::MAIN_FLOW`](https://github.com/huutam1991/cpp_async_binance_order_book/blob/d9962cb1f6ea812caceb66eb965536f23835f3eb/engine/main.cpp#L64)
-- **Timer:** Non-blocking scheduling using [`sleep_for()`](https://github.com/huutam1991/cpp_async_binance_order_book/blob/d9962cb1f6ea812caceb66eb965536f23835f3eb/engine/main.cpp#L54) without spinning. 
+- **Coroutines:** Avoids busy-waiting and blocking, all of handling logic run on 1 thread with `EventBaseID` is: [`EventBaseID::MARKET_MAKER_STRATEGY`](https://github.com/huutam1991/cpp_async_binance_order_book/blob/d9962cb1f6ea812caceb66eb965536f23835f3eb/engine/main.cpp#L64)
+- **Timer:** Non-blocking scheduling using [`sleep_for()`](https://github.com/huutam1991/cpp_async_binance_order_book/blob/d9962cb1f6ea812caceb66eb965536f23835f3eb/engine/main.cpp#L54) without spinning.
 
 ### 6. Required Callback Names
-- [`OnOrderbookWs(std::string data)`](https://github.com/huutam1991/cpp_async_binance_order_book/blob/d9962cb1f6ea812caceb66eb965536f23835f3eb/engine/order_book/order_book.cpp#L33) 
-- [`OnOrderbookRest(std::string data)`](https://github.com/huutam1991/cpp_async_binance_order_book/blob/d9962cb1f6ea812caceb66eb965536f23835f3eb/engine/order_book/order_book.cpp#L116) 
+- [`OnOrderbookWs(std::string data)`](https://github.com/huutam1991/cpp_async_binance_order_book/blob/d9962cb1f6ea812caceb66eb965536f23835f3eb/engine/order_book/order_book.cpp#L33)
+- [`OnOrderbookRest(std::string data)`](https://github.com/huutam1991/cpp_async_binance_order_book/blob/d9962cb1f6ea812caceb66eb965536f23835f3eb/engine/order_book/order_book.cpp#L116)
 
 Both functions are implemented in `order_book.cpp`, with deduplication and state update logic built-in.
 
@@ -55,7 +55,7 @@ Run the setup script to install dependencies: `cmake`, `openssl`, `boost`
 ./build_bash.sh
 ```
 
-### Run 
+### Run
 
 ```bash
 ./run_bash.sh
@@ -64,7 +64,7 @@ Run the setup script to install dependencies: `cmake`, `openssl`, `boost`
 ## Assignment 1b
 ### 1. Diagram
 Each symbol runs on its own dedicated `Boost I/O context` thread for both `WebSocket` and `REST` operations.
-However, the data returned is handled sequentially on a single thread (`EventBaseID::MAIN_FLOW`) using the `coroutine system`, so there is no blocking.
+However, the data returned is handled sequentially on a single thread (`EventBaseID::MARKET_MAKER_STRATEGY`) using the `coroutine system`, so there is no blocking.
 
 ```
 Y-axis: CPU thread per symbol
@@ -85,7 +85,7 @@ CPU Thread 3 - Boost IO context (BNBUSDT):
     │ REST poll    │ WS read    │ REST poll  │
     └──────────────┴────────────┴────────────┘
 
-CPU Thread 4 - coroutine (EventBaseID::MAIN_FLOW):
+CPU Thread 4 - coroutine (EventBaseID::MARKET_MAKER_STRATEGY):
     ┌─────────────────────────┬───────────────────────────┬─────────────────────────┐
     │ OnOrderbookWs (BTCUSDT) │ OnOrderbookRest (ETHUSDT) │ OnOrderbookWs (BNBUSDT) │
     └─────────────────────────┴───────────────────────────┴─────────────────────────┘
@@ -94,7 +94,7 @@ CPU Thread 4 - coroutine (EventBaseID::MAIN_FLOW):
 ### 2. Potential Bottlenecks & Monitoring Targets
 
 **Bottlenecks:**
-1. **Coroutine thread overload:** All callbacks (`OnOrderbookWs`, `OnOrderbookRest`) run on a single coroutine thread (`EventBaseID::MAIN_FLOW`). At high symbol or message volume, this becomes a bottleneck.
+1. **Coroutine thread overload:** All callbacks (`OnOrderbookWs`, `OnOrderbookRest`) run on a single coroutine thread (`EventBaseID::MARKET_MAKER_STRATEGY`). At high symbol or message volume, this becomes a bottleneck.
 2. **REST snapshot delays:** Broken update chains trigger full snapshot reloads. These depend on network conditions and may block book synchronization.
 
 **What to monitor:**
@@ -102,11 +102,11 @@ CPU Thread 4 - coroutine (EventBaseID::MAIN_FLOW):
 - Frequency of snapshot reloads due to `pu ≠ lastUpdateId`.
 
 ### 3. Latency Improvements (If Given More Time)
-1. **Switch to a high-performance JSON parser:**  
+1. **Switch to a high-performance JSON parser:**
    Replace the custom JSON parser with libraries like [simdjson](https://github.com/simdjson/simdjson) or [RapidJSON](https://github.com/Tencent/rapidjson) to significantly reduce parsing latency for both WebSocket and REST data.
 
-2. **Pin threads to CPU cores:**  
-   Bind each `io_context` thread and the coroutine thread (`EventBaseID::MAIN_FLOW`) to dedicated CPU cores to reduce context switching and improve cache locality.
+2. **Pin threads to CPU cores:**
+   Bind each `io_context` thread and the coroutine thread (`EventBaseID::MARKET_MAKER_STRATEGY`) to dedicated CPU cores to reduce context switching and improve cache locality.
 
-3. **Implement keep-alive for REST requests:**  
+3. **Implement keep-alive for REST requests:**
    Maintain persistent HTTP connections using the `Connection: keep-alive` header to avoid repeated TCP handshakes and TLS handshakes for each REST poll, reducing latency and system overhead.

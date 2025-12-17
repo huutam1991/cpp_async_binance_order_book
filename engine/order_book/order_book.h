@@ -2,7 +2,7 @@
 
 #include <map>
 
-#include <coroutine/task_void.h>
+#include <coroutine/task.h>
 #include <json/json.h>
 #include <order_book/order_book_websocket/order_book_websocket.h>
 #include <order_book/order_book_rest/order_book_rest.h>
@@ -11,7 +11,7 @@ class OrderBook
 {
 public:
     OrderBook(const std::string& symbol, size_t depth_level, net::io_context& ioc, EventBase* event_base);
-    TaskVoid send_request_get_full_order_book();
+    Task<void> send_request_get_full_order_book();
 
     bool is_not_synced();
 

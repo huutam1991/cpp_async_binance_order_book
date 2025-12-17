@@ -13,21 +13,21 @@ OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, size_t depth_l
     m_websocket = std::make_shared<WebsocketClientAsync>(m_ioc, m_event_base);
     m_websocket->set_callbacks(
         // on_connect
-        [this, ws_path]() -> TaskVoid
+        [this, ws_path]() -> Task<void>
         {
             std::cout << "Websocket [ws_path] is connected: " << std::endl;
             co_return;
         },
         // on_message
-        [this, symbol](std::string buffer) -> TaskVoid
+        [this, symbol](std::string buffer) -> Task<void>
         {
             MeasureTime t("Depth data handle from websocket", MeasureUnit::MICROSECOND);
             m_on_order_book_ws(std::move(buffer));
- 
+
             co_return;
         },
         // on_disconnect
-        [this, symbol]() -> TaskVoid
+        [this, symbol]() -> Task<void>
         {
             // Re-start
             // ADD_LOG("Disconnect, re-start BinanceMarketData");
@@ -36,7 +36,7 @@ OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, size_t depth_l
             co_return;
         },
         // on_close
-        []() -> TaskVoid
+        []() -> Task<void>
         {
             // ADD_LOG("BinanceMarketData close");
             co_return;
@@ -49,7 +49,7 @@ OrderBookWebsocket::OrderBookWebsocket(const std::string& symbol, size_t depth_l
     keep_websocket_alive().start_running_on(m_event_base);
 }
 
-TaskVoid OrderBookWebsocket::keep_websocket_alive()
+Task<void> OrderBookWebsocket::keep_websocket_alive()
 {
     // Send ping at every 30 second to keep websocket alive
     while (true)
@@ -57,5 +57,5 @@ TaskVoid OrderBookWebsocket::keep_websocket_alive()
         co_await Timer::sleep_for(30000);
         m_websocket->send_ping();
     }
-    
+
 }

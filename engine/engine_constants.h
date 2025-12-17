@@ -7,9 +7,3 @@ enum IOCId
     ETHUSDT,
     BNBUSDT,
 };
-
-enum EventBaseID
-{
-    MAIN_FLOW,
-    STRATEGY                 // Strategy
-};

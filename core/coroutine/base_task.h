@@ -3,14 +3,15 @@
 #include <future>
 #include "base_promise_type.h"
 
-struct TaskVoid
+template<class T>
+struct BaseTask
 {
     struct promise_type : public BasePromiseType
     {
         // Methods of a standard promise
-        TaskVoid get_return_object()
+        BaseTask get_return_object()
         {
-            return TaskVoid{std::coroutine_handle<promise_type>::from_promise(*this)};
+            return BaseTask{std::coroutine_handle<promise_type>::from_promise(*this)};
         }
         std::suspend_always initial_suspend() { return {}; }
         std::suspend_always final_suspend() noexcept
@@ -22,35 +23,46 @@ struct TaskVoid
 
             return {};
         }
-        void return_void()
-        {
-            promise_value.set_value();
-        }
         void unhandled_exception() { std::terminate(); }
 
         // Promise value
-        std::promise<void> promise_value;
+        std::promise<T> promise_value;
     };
 
     std::coroutine_handle<promise_type> handle = nullptr;
-    TaskVoid(std::coroutine_handle<promise_type> h) : handle(h) {}
-    TaskVoid() {};
-    TaskVoid(const TaskVoid& copy) : handle{copy.handle} {}
-    ~TaskVoid()
+    BaseTask(std::coroutine_handle<promise_type> h) : handle(h) {}
+    BaseTask(promise_type* promise) : handle(std::coroutine_handle<promise_type>::from_promise(*promise)) {}
+    BaseTask() {};
+    BaseTask(const BaseTask& copy) = delete;
+    BaseTask(BaseTask&& copy) : handle{std::move(copy.handle)} { copy.handle = nullptr; }
+    ~BaseTask()
     {
         // Light destroy, lol
         destroy(false);
     }
 
-    TaskVoid& operator=(const TaskVoid& copy)
+    bool operator==(std::nullptr_t null) const
     {
-        handle = copy.handle;
+        return handle == nullptr;
+    }
+
+    BaseTask& operator=(const BaseTask& copy) = delete;
+
+    BaseTask& operator=(BaseTask&& copy)
+    {
+        if (handle != nullptr)
+        {
+            destroy();
+        }
+
+        handle = std::move(copy.handle);
+        copy.handle = nullptr;
         return *this;
     }
 
     void destroy(bool complete = true)
     {
-        // This is just a Task object with nullptr handle, not a really Task that is created by C++
+        // This is just a BaseTask object with nullptr handle, not a really BaseTask that is created by C++
         if (handle == nullptr)
         {
             return;
@@ -61,11 +73,11 @@ struct TaskVoid
             auto base_promise_type = get_base_promise_type();
             if (base_promise_type->m_event_base != nullptr)
             {
-                uint64_t task_id = base_promise_type->task_id;
-                base_promise_type->m_event_base->remove_from_event_base(task_id);
+                void* task_ptr = base_promise_type->task_ptr;
+                base_promise_type->m_event_base->remove_from_event_base(task_ptr);
             }
 
-            handle.destroy();
+            // handle.destroy(); // Will be destroyed at EventBase
         }
         else
         {
@@ -92,7 +104,7 @@ struct TaskVoid
         base_promise_type->register_on(event_base, handle);
     }
 
-    std::future<void> start_running_on(EventBase* event_base)
+    inline std::future<T> start_running_on(EventBase* event_base)
     {
         register_on(event_base);
 
@@ -119,10 +131,5 @@ struct TaskVoid
 
         // Running this task on EventBase
         register_on(suspend_base_pt->m_event_base);
-    }
-
-    void await_resume()
-    {
-        return;
     }
 };
