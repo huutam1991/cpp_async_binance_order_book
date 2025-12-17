@@ -110,7 +110,7 @@ void OrderBook::OnOrderbookWs(std::string data)
         }
     });
 
-    std::cout << "[WS] symbol: [" << m_symbol << "], Update applied successfully: u=" << u << "\n";
+    // std::cout << "[WS] symbol: [" << m_symbol << "], Update applied successfully: u=" << u << "\n";
 }
 
 void OrderBook::OnOrderbookRest(std::string data)

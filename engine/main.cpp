@@ -1,5 +1,9 @@
 #include <iostream>
 
+#include <spdlog/async.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+
 #include <time/timer.h>
 #include <ioc_pool.h>
 #include <json/json.h>
@@ -56,6 +60,15 @@ Task<int> async_main()
 
 int main(int argc, char **argv)
 {
+    // Init log
+    std::string log_level = std::getenv("LOG_LEVEL") ? std::getenv("LOG_LEVEL") : "trace";
+    auto log_level_enum = spdlog::level::from_str(log_level);
+    auto async_logger = spdlog::create_async<spdlog::sinks::stdout_color_sink_mt>("async_logger");
+    async_logger->set_pattern("%d-%m-%Y %H:%M:%S %^%l%$ %v");
+    async_logger->set_level(log_level_enum);
+    spdlog::set_default_logger(async_logger);
+    spdlog::info("Logging initialized with level: {}", log_level);
+
     // Run async_main()
     auto task = async_main();
     auto async_run = task.start_running_on(EventBaseManager::get_event_base_by_id(EventBaseID::MARKET_MAKER_STRATEGY));
