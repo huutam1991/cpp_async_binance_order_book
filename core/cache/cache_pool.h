@@ -4,12 +4,14 @@
 #include <cstddef>
 #include <string>
 #include <array>
+#include <atomic>
 
-#include <utils/util_macros.h>
-#include <utils/spin_lock.h>
+#include <time/measure_time.h>
+
+#define FORCE_INLINE inline __attribute__((always_inline))
 
 template <typename T>
-std::string demangled_name()
+constexpr std::string demangled_name()
 {
     int status;
     char* realname = abi::__cxa_demangle(typeid(T).name(), 0, 0, &status);
@@ -21,7 +23,7 @@ std::string demangled_name()
 template <typename T, typename U = void>
 struct TypeName
 {
-    static std::string name()
+    static constexpr std::string name()
     {
         return demangled_name<T>();
     }
@@ -30,7 +32,7 @@ struct TypeName
 template <typename T>
 struct TypeName<T, std::void_t<decltype(T::name())>>
 {
-    static std::string name()
+    static constexpr std::string name()
     {
         return T::name();
     }
@@ -51,38 +53,60 @@ concept has_clear = requires
 template <class T, size_t Size>
 class CachePool
 {
+    struct alignas(64) ObjectWrapper
+    {
+        T object;
+    };
+
+    struct alignas(64) ObjectPointerWrapper
+    {
+        T* ptr;
+    };
+
     struct PoolBuffer
     {
-        std::array<T*, Size> available_items;
-        std::array<T, Size> data;
-        size_t head = 0;
-        size_t tail = Size - 1;
-        size_t size = Size;
+        alignas(64) std::array<ObjectPointerWrapper, Size> available_items;
+        alignas(64) std::array<ObjectWrapper, Size> data;
+        alignas(64) std::atomic<size_t> head = 0;
+        alignas(64) std::atomic<size_t> tail = 0;
+        alignas(64) std::atomic<size_t> size = Size;
 
         PoolBuffer()
         {
             for (size_t i = 0; i < Size; ++i)
             {
-                available_items[i] = &data[i];
+                available_items[i].ptr = &data[i].object;
             }
         }
 
-        FORCE_INLINE void move_head()
+        FORCE_INLINE size_t get_current_head()
         {
-            head++;
-            if (head >= Size)
+            size_t current = head.load(std::memory_order_acquire);
+            size_t next = (current + 1) % Size;
+
+            while (!head.compare_exchange_weak(current, next,
+                                            std::memory_order_relaxed,
+                                            std::memory_order_relaxed))
             {
-                head = 0; // cycle the head index
+                next = (current + 1) % Size;
             }
+
+            return current;
         }
 
-        FORCE_INLINE void move_tail()
+        FORCE_INLINE size_t get_current_tail()
         {
-            tail++;
-            if (tail >= Size)
+            size_t current = tail.load(std::memory_order_acquire);
+            size_t next = (current + 1) % Size;
+
+            while (!tail.compare_exchange_weak(current, next,
+                                            std::memory_order_relaxed,
+                                            std::memory_order_relaxed))
             {
-                tail = 0; // cycle the tail index
+                next = (current + 1) % Size;
             }
+
+            return current;
         }
     };
 
@@ -92,33 +116,29 @@ class CachePool
         return *pool_buffer;
     }
 
-    FORCE_INLINE static SpinLock& get_spin_lock()
-    {
-        static SpinLock spin_lock;
-        return spin_lock;
-    }
-
 public:
     // Acquire a cache item
     FORCE_INLINE static T* acquire()
     {
-        // MeasureTime measure_time("CachePool::acquire", MeasureUnit::NANOSECOND);
-
-        PoolBuffer& pool_buffer = get_pool_buffer();
-        if (pool_buffer.size == 0)
-        {
-            throw std::runtime_error("No available items in cache pool: [" + TypeName<T>::name() + "]");
-        }
+        static std::string name = TypeName<T>::name();
 
         T* item;
         {
-            // Lock the spin lock to ensure thread safety
-            std::lock_guard<SpinLock> guard(get_spin_lock());
+            // MeasureTime measure_time("CachePool::acquire, name: " + name, MeasureUnit::NANOSECOND);
+            // MeasureTime measure_time("CachePool::acquire", MeasureUnit::NANOSECOND);
+
+            PoolBuffer& pool_buffer = get_pool_buffer();
+            if (pool_buffer.size.load(std::memory_order_relaxed) == 0)
+            {
+                throw std::runtime_error("No available items in cache pool: [" + TypeName<T>::name() + "]");
+            }
 
             // Get the item from the pool
-            item = pool_buffer.available_items[pool_buffer.head];
-            pool_buffer.move_head();
-            pool_buffer.size--;
+            size_t head_index = pool_buffer.get_current_head();
+            item = pool_buffer.available_items[head_index].ptr;
+
+            // Decrease size only after successfully moving head
+            pool_buffer.size.fetch_sub(1, std::memory_order_release);
         }
 
         // Check if the item has init method and call it
@@ -133,25 +153,27 @@ public:
     // Release a cache item back to the pool
     FORCE_INLINE static void release(T* item)
     {
-        // MeasureTime measure_time("CachePool::release", MeasureUnit::NANOSECOND);
+        static std::string name = TypeName<T>::name();
 
         if (item != nullptr)
         {
+            {
+                // MeasureTime measure_time("CachePool::release, name: " + name, MeasureUnit::NANOSECOND);
+                // MeasureTime measure_time("CachePool::release", MeasureUnit::NANOSECOND);
+
+                // Add item back to the pool
+                PoolBuffer& pool_buffer = get_pool_buffer();
+                size_t tail_index = pool_buffer.get_current_tail();
+                pool_buffer.available_items[tail_index].ptr = item;
+
+                // Increase size only after successfully moving tail
+                pool_buffer.size.fetch_add(1, std::memory_order_release);
+            }
+
             // Check if the item has clear method and call it
             if constexpr (has_clear<T>)
             {
                 item->clear();
-            }
-
-            {
-                // Lock the spin lock to ensure thread safety
-                std::lock_guard<SpinLock> guard(get_spin_lock());
-
-                // Add item back to the pool
-                PoolBuffer& pool_buffer = get_pool_buffer();
-                pool_buffer.move_tail();
-                pool_buffer.available_items[pool_buffer.tail] = item;
-                pool_buffer.size++;
             }
         }
         else
@@ -160,9 +182,24 @@ public:
         }
     }
 
+    FORCE_INLINE static size_t head()
+    {
+        return get_pool_buffer().head.load(std::memory_order_relaxed);
+    }
+
+    FORCE_INLINE static size_t tail()
+    {
+        return get_pool_buffer().tail.load(std::memory_order_relaxed);
+    }
+
     FORCE_INLINE static size_t size()
     {
-        std::lock_guard<SpinLock> guard(get_spin_lock());
-        return get_pool_buffer().size;
+        return get_pool_buffer().size.load(std::memory_order_relaxed);
+    }
+
+    FORCE_INLINE static size_t total_released_items()
+    {
+        size_t size = get_pool_buffer().size.load(std::memory_order_acquire);
+        return Size - size;
     }
 };

@@ -1,17 +1,28 @@
 #pragma once
 
 #include <string>
+#include <atomic>
 #include <fmt/core.h>
 #include <fmt/format.h>
 
 #include <cache/cache_pool.h>
 
-#define MAX_STRING_NUM 10000
+#define MAX_STRING_NUM 1000000
 
 struct StringReference
 {
     std::string data;
-    uint32_t count;
+    std::atomic<uint32_t> count;
+
+    inline void retain()
+    {
+        count.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    inline uint32_t release()
+    {
+        return count.fetch_sub(1, std::memory_order_acq_rel);
+    }
 
     static std::string name()
     {
@@ -46,6 +57,25 @@ public:
     {
         if (!m_string_reference) return {};
         return std::string_view(m_string_reference->data).substr(m_start_index, m_length);
+    }
+
+    inline std::string to_string() const
+    {
+        return std::string(data());
+    }
+
+    inline operator std::string() const
+    {
+        return std::string(data());
+    }
+
+    inline bool operator==(const ShareString& other) const
+    {
+        if (!m_string_reference || !other.m_string_reference)
+        {
+            return false; // If either is null, they are not equal
+        }
+        return data() == other.data();
     }
 
 private:

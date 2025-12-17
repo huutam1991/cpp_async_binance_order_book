@@ -2,16 +2,16 @@
 #include <string>
 #include <functional>
 
-#include <measure_time.h>
+#include <time/measure_time.h>
 
-class DedupeChecker 
+class DedupeChecker
 {
 public:
-    static bool is_duplicate(const std::string& msg) 
+    static bool is_duplicate(const std::string& msg)
     {
         static std::unordered_set<size_t> seen_hashes;
 
-        MeasureTime t("Check is_duplicate", MeasureUnit::MICROSECOND);
+        // MeasureTime t("Check is_duplicate", MeasureUnit::MICROSECOND);
 
         size_t hash = std::hash<std::string>{}(msg);
         auto [it, inserted] = seen_hashes.insert(hash);

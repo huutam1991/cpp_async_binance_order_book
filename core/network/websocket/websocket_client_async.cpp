@@ -1,11 +1,13 @@
-#include <websocket/websocket_client_async.h>
+#include <network/websocket/websocket_client_async.h>
+#include <utils/util_macros.h>
 
-WebsocketClientAsync::WebsocketClientAsync(net::io_context& io_context, EventBase* event_base) :
+WebsocketClientAsync::WebsocketClientAsync(net::io_context& io_context, EventBase* event_base, std::string name) :
     m_ioc(io_context),
     m_resolver(m_ioc),
     m_ssl_ctx(boost::asio::ssl::context::tlsv12_client),
     m_ws(m_ioc, m_ssl_ctx),
-    m_event_base(event_base)
+    m_event_base(event_base),
+    m_name(std::move(name))
 {
     m_ssl_ctx.set_verify_mode(boost::asio::ssl::verify_peer);
     m_ssl_ctx.set_default_verify_paths();
@@ -13,7 +15,7 @@ WebsocketClientAsync::WebsocketClientAsync(net::io_context& io_context, EventBas
 
 WebsocketClientAsync::~WebsocketClientAsync()
 {
-    std::cout << "Close WebsocketClientAsync" << std::endl;
+    spdlog::info("Close WebsocketClientAsync: [{}]", m_name);
 }
 
 void WebsocketClientAsync::set_callbacks(std::function<Task<void>()> on_connect, std::function<Task<void>(std::string)> on_message, std::function<Task<void>()> on_disconnect, std::function<Task<void>()> on_close)
@@ -83,7 +85,7 @@ void WebsocketClientAsync::on_read(beast::error_code ec, std::size_t bytes_trans
 
     if (ec)
     {
-        std::cout << "WebsocketClientAsync - on_read error: " << ec.message() << std::endl;
+        spdlog::info("WebsocketClientAsync: [{}] - on_read error: {}", m_name, ec.message());
 
         if (
             ec == websocket::error::closed ||                     // WebSocket close
@@ -176,6 +178,8 @@ void WebsocketClientAsync::on_ping(beast::error_code ec)
 
         return fail("on_ping", ec);
     }
+
+    spdlog::debug("WebsocketClientAsync: [{}] - Ping sent successfully, ec: {}", m_name, ec.message());
 }
 
 void WebsocketClientAsync::close()
@@ -189,7 +193,7 @@ void WebsocketClientAsync::on_close(beast::error_code ec)
 {
     if (ec)
     {
-        std::cout << "WebsocketClientAsync - Close error: " << ec.message() << std::endl;
+        spdlog::info("WebsocketClientAsync: [{}] - Close error: {}", m_name, ec.message());
     }
 
     // Invoke [m_on_close]
@@ -198,7 +202,31 @@ void WebsocketClientAsync::on_close(beast::error_code ec)
 
 void WebsocketClientAsync::fail(const std::string& where, beast::error_code ec)
 {
-    std::cout << "WebsocketClientAsync - Error in " << where << ": " << ec.message() << std::endl;
+    spdlog::info("WebsocketClientAsync: [{}] - Error in {}: {}", m_name, where, ec.message());
+}
+
+void WebsocketClientAsync::add_keep_websocket_alive_task(std::function<Task<void>()> keep_alive_logic, size_t tick_in_milliseconds)
+{
+    Timer::add_schedule_task([name = m_name, weak_ptr = weak_from_this(), kal = std::move(keep_alive_logic), tick = tick_in_milliseconds]() mutable
+    {
+        if (auto self = weak_ptr.lock())
+        {
+            self->on_keep_websocket_alive(std::move(kal), tick);
+        }
+        else
+        {
+            spdlog::warn("WebsocketClientAsync: [{}] has been destroyed, cannot run keep alive logic", name);
+        }
+    }, tick_in_milliseconds);
+}
+
+void WebsocketClientAsync::on_keep_websocket_alive(std::function<Task<void>()> keep_alive_logic, size_t tick_in_milliseconds)
+{
+    if (keep_alive_logic != nullptr && m_event_base != nullptr)
+    {
+        keep_alive_logic().start_running_on(m_event_base);
+        add_keep_websocket_alive_task(std::move(keep_alive_logic), tick_in_milliseconds);
+    }
 }
 
 template<class T, class... Args>

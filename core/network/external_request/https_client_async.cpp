@@ -1,9 +1,12 @@
-#include <https_client/https_client_async.h>
+#include <network/external_request/https_client_async.h>
 #include <unordered_map>
 #include <mutex>
 
 HttpsClientAsync::HttpsClientAsync(net::io_context& ioc, const std::string& host, const std::string& port)
-    : m_resolver(ioc), m_resolve_result{get_resolve_result_cache(m_resolver, host, port)}, m_stream{ioc, get_ssl_ctx()}, m_host{host}
+    :   m_resolver(ioc),
+        m_resolve_result{get_resolve_result_cache(m_resolver, host, port)},
+        m_stream{ioc, get_ssl_ctx()},
+        m_host{host}
 {
 }
 
@@ -122,7 +125,10 @@ void HttpsClientAsync::on_write(beast::error_code ec, std::size_t bytes_transfer
     boost::ignore_unused(bytes_transferred);
     if (ec) return fail("write", ec);
 
-    http::async_read(m_stream, m_buffer, m_res,
+    m_parser.get().clear();
+    m_parser.body_limit(50 * 1024 * 1024); // Reset body limit to 10MB
+
+    http::async_read(m_stream, m_buffer, m_parser,
         beast::bind_front_handler(&HttpsClientAsync::on_read, shared_from_this()));
 }
 
@@ -131,6 +137,7 @@ void HttpsClientAsync::on_read(beast::error_code ec, std::size_t bytes_transferr
     boost::ignore_unused(bytes_transferred);
     if (ec) return fail("read", ec);
 
+    m_res = m_parser.get();
     m_future_value->set_value(m_res.body());
 
     beast::error_code shutdown_ec;
@@ -140,4 +147,5 @@ void HttpsClientAsync::on_read(beast::error_code ec, std::size_t bytes_transferr
 void HttpsClientAsync::fail(const std::string& where, beast::error_code ec)
 {
     std::cerr << "HttpsClientAsync - Error in " << where << ": " << ec.message() << std::endl;
+    spdlog::error("HttpsClientAsync - data: {}", beast::buffers_to_string(m_buffer.data()));
 }

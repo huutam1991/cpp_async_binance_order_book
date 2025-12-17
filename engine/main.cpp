@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <timer.h>
+#include <time/timer.h>
 #include <ioc_pool.h>
 #include <json/json.h>
 #include <coroutine/task.h>
@@ -11,16 +11,13 @@
 
 Task<int> async_main()
 {
-    // Init Timer with ioc TIMER
-    Timer::init(IOCPool::get_ioc_by_id(IOCId::TIMER));
-
     std::vector<std::unique_ptr<OrderBook>> order_book_list;
 
     // BTCUSDT
     order_book_list.push_back(std::make_unique<OrderBook>(
         "btcusdt",                                                     // symbol
         10,                                                            // depth levels
-        IOCPool::get_ioc_by_id(IOCId::BTCUSDT),                        // io context (to use websocket, rest on boost, 1 io context running on 1 thread)
+        IOCPool::get_ioc_by_id(IOCId::MARKET_DATA),                        // io context (to use websocket, rest on boost, 1 io context running on 1 thread)
         EventBaseManager::get_event_base_by_id(EventBaseID::MARKET_MAKER_STRATEGY) // event base for coroutine (1 event base running on 1 thread)
     ));
 
@@ -28,7 +25,7 @@ Task<int> async_main()
     order_book_list.push_back(std::make_unique<OrderBook>(
         "ethusdt",                                                     // symbol
         10,                                                            // depth levels
-        IOCPool::get_ioc_by_id(IOCId::ETHUSDT),                        // io context (to use websocket, rest on boost, 1 io context running on 1 thread)
+        IOCPool::get_ioc_by_id(IOCId::MARKET_DATA),                        // io context (to use websocket, rest on boost, 1 io context running on 1 thread)
         EventBaseManager::get_event_base_by_id(EventBaseID::MARKET_MAKER_STRATEGY) // event base for coroutine (1 event base running on 1 thread)
     ));
 
@@ -36,7 +33,7 @@ Task<int> async_main()
     order_book_list.push_back(std::make_unique<OrderBook>(
         "bnbusdt",                                                     // symbol
         10,                                                            // depth levels
-        IOCPool::get_ioc_by_id(IOCId::BNBUSDT),                        // io context (to use websocket, rest on boost, 1 io context running on 1 thread)
+        IOCPool::get_ioc_by_id(IOCId::MARKET_DATA),                        // io context (to use websocket, rest on boost, 1 io context running on 1 thread)
         EventBaseManager::get_event_base_by_id(EventBaseID::MARKET_MAKER_STRATEGY) // event base for coroutine (1 event base running on 1 thread)
     ));
 
