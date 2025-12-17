@@ -8,7 +8,7 @@
 #include <cache/share_string.h>
 
 class JsonValue;
-using JsonValuePool = CachePool<JsonValue, 1000000>;
+using JsonValuePool = CachePool<JsonValue, 10000000>;
 
 class JsonValue : public JsonTypeBase
 {
@@ -25,7 +25,7 @@ class JsonValue : public JsonTypeBase
     char buffer_number[50]; // Buffer for number conversion
 
 public:
-    JsonValue() = default;
+    JsonValue();
     JsonValue(const JsonValue&) = delete;
     JsonValue(JsonValue&&) = delete;
     JsonValue& operator=(const JsonValue&) = delete;
@@ -57,13 +57,17 @@ public:
         {
             m_value = ShareString(std::forward<T>(value));
         }
-        else if constexpr (std::is_same_v<std::decay_t<T>, const char*>)
-        {
-            m_value = ShareString(std::forward<T>(value));
-        }
         else if constexpr (std::is_same_v<std::decay_t<T>, std::string_view>)
         {
             m_value = ShareString(std::string(std::forward<T>(value)));
+        }
+        else if constexpr (std::is_same_v<std::decay_t<T>, const char*>)
+        {
+            m_value = ShareString(std::string(value));
+        }
+        else if constexpr (std::is_same_v<std::decay_t<T>, bool>)
+        {
+            m_value = static_cast<bool>(std::forward<T>(value));
         }
         else if constexpr (std::is_same_v<std::decay_t<T>, double>)
         {
@@ -96,14 +100,87 @@ public:
     }
 
     // Methosds from JsonTypeBase
-    virtual bool is_json_value() override
+    inline bool is_json_value()
     {
         return true;
     }
 
-    virtual void write_string_value(JsonStringBuilder& builder) override;
+    inline void write_string_value(JsonStringBuilder& builder)
+    {
+        std::visit([this, &builder](auto&& arg) -> void
+        {
+            using U = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<U, std::nullptr_t>)
+            {
+                builder.write_raw("null", 4);
+            }
+            else if constexpr (std::is_same_v<U, bool>)
+            {
+                if (arg)
+                {
+                    builder.write_raw("true", 4);
+                }
+                else
+                {
+                    builder.write_raw("false", 5);
+                }
+            }
+            else if constexpr (std::is_arithmetic_v<U>)
+            {
+                auto [ptr, ec] = std::to_chars(buffer_number, buffer_number + sizeof(buffer_number), arg);
+                if (ec == std::errc{})
+                {
+                    builder.write_raw(buffer_number, ptr - buffer_number);
+                }
+            }
+            else if constexpr (std::is_same_v<U, ShareString>)
+            {
+                std::string_view str_view = arg.data();
+                if (m_is_string_format)
+                {
+                    builder.write_char('\"');
+                    builder.write_raw(str_view.data(), str_view.size());
+                    builder.write_char('\"');
+                }
+                else
+                {
+                    builder.write_raw(str_view.data(), str_view.size());
+                }
+            }
+            else if constexpr (std::is_same_v<U, std::string_view>)
+            {
+                if (m_is_string_format)
+                {
+                    builder.write_char('\"');
+                    builder.write_raw(arg.data(), arg.size());
+                    builder.write_char('\"');
+                }
+                else
+                {
+                    builder.write_raw(arg.data(), arg.size());
+                }
+            }
+            else if constexpr (std::is_same_v<U, const char*>)
+            {
+                if (m_is_string_format)
+                {
+                    builder.write_char('\"');
+                    builder.write_raw(arg, std::strlen(arg));
+                    builder.write_char('\"');
+                }
+                else
+                {
+                    builder.write_raw(arg, std::strlen(arg));
+                }
+            }
+            else
+            {
+                builder.write_raw("<unsupported>", 13);
+            }
+        }, m_value);
+    }
 
-    virtual JsonTypeBase* get_copy() override
+    inline JsonTypeBase* get_copy()
     {
         JsonValue* json_value = JsonValuePool::acquire();
         json_value->m_value = m_value;
@@ -111,12 +188,12 @@ public:
         return json_value;
     }
 
-    virtual JsonTypeBase* get_deep_clone() override
+    inline JsonTypeBase* get_deep_clone()
     {
         return get_copy(); // For simplicity, deep clone is same as copy in this case
     }
 
-    virtual void release() override
+    inline void release()
     {
         m_value = nullptr; // Clear the value
         JsonValuePool::release(this);

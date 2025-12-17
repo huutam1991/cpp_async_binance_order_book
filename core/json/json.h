@@ -30,12 +30,21 @@ public:
     Json(T&& value)
     {
         check_create_json_value();
-        ((JsonValue*)m_value)->operator=(std::forward<T>(value));
+        static_cast<JsonValue*>(m_value)->operator=(std::forward<T>(value));
+    }
+
+    ~Json()
+    {
+        if (m_value != nullptr)
+        {
+            m_value->release();
+            m_value = nullptr;
+        }
     }
 
     static Json parse(std::string json_string);
 
-    Json& operator=(const Json& copy) noexcept
+    inline Json& operator=(const Json& copy) noexcept
     {
         if (this != &copy)
         {
@@ -49,7 +58,7 @@ public:
         return *this;
     }
 
-    Json& operator=(Json&& copy) noexcept
+    inline Json& operator=(Json&& copy) noexcept
     {
         if (this != &copy)
         {
@@ -65,15 +74,15 @@ public:
     }
 
     template <class T, std::enable_if_t<!std::is_same<std::decay_t<T>, Json>::value, int> = 0>
-    Json& operator=(T&& value)
+    inline Json& operator=(T&& value)
     {
         check_create_json_value();
-        ((JsonValue*)m_value)->operator=(std::forward<T>(value));
+        static_cast<JsonValue*>(m_value)->operator=(std::forward<T>(value));
         return *this;
     }
 
     template<class T>
-    operator T()
+    inline operator T()
     {
         if (m_value == nullptr || m_value->is_json_value() == false)
         {
@@ -81,7 +90,7 @@ public:
         }
         else
         {
-            return ((JsonValue*)m_value)->operator T();
+            return static_cast<JsonValue*>(m_value)->operator T();
         }
     }
 
@@ -90,25 +99,25 @@ public:
     Json& operator[](size_t index);
 
     template <typename T, std::enable_if_t<std::is_integral_v<T>, int> = 0>
-    Json& operator[](T index)
+    inline Json& operator[](T index)
     {
         return (*this)[static_cast<size_t>(index)];
     }
 
-    bool operator==(const Json& other) const
+    inline bool operator==(const Json& other) const
     {
         // Check if both m_value pointers are the same
         return m_value == other.m_value;
     }
 
-    bool operator!=(const Json& other) const
+    inline bool operator!=(const Json& other) const
     {
         // Check if both m_value pointers are the same
         return m_value != other.m_value;
     }
 
     template <class T, std::enable_if_t<!std::is_same<std::decay_t<T>, Json>::value, int> = 0>
-    bool operator ==(T value) const
+    inline bool operator==(T value) const
     {
         if (m_value == nullptr || m_value->is_json_value() == false)
         {
@@ -118,34 +127,34 @@ public:
         {
             if constexpr (std::is_same_v<std::decay_t<T>, const char*>)
             {
-                const ShareString& share_string = ((JsonValue*)m_value)->operator ShareString();
+                const ShareString& share_string = static_cast<JsonValue*>(m_value)->operator ShareString();
                 std::string_view current_value = share_string.data();
                 std::string_view value_view(value);
                 return current_value == value_view;
             }
             else if constexpr (std::is_same_v<std::decay_t<T>, std::string_view>)
             {
-                const ShareString& share_string = ((JsonValue*)m_value)->operator ShareString();
+                const ShareString& share_string = static_cast<JsonValue*>(m_value)->operator ShareString();
                 std::string_view current_value = share_string.data();
                 return current_value == value;
             }
             else
             {
-                T current_value = ((JsonValue*)m_value)->operator T();
+                T current_value = static_cast<JsonValue*>(m_value)->operator T();
                 return current_value == value;
             }
         }
     }
 
     template <class T, std::enable_if_t<!std::is_same<std::decay_t<T>, Json>::value, int> = 0>
-    bool operator !=(T value) const
+    inline bool operator !=(T value) const
     {
         // Reuse == operator
         return operator==(value) == false;
     }
 
     template <class T, std::enable_if_t<!std::is_same<std::decay_t<T>, Json>::value, int> = 0>
-    bool operator <(const T& value) const
+    inline bool operator <(const T& value) const
     {
         if (m_value == nullptr || m_value->is_json_value() == false)
         {
@@ -153,13 +162,13 @@ public:
         }
         else
         {
-            T current_value = ((JsonValue*)m_value)->operator T();
+            T current_value = static_cast<JsonValue*>(m_value)->operator T();
             return current_value < value;
         }
     }
 
     template <class T, std::enable_if_t<!std::is_same<std::decay_t<T>, Json>::value, int> = 0>
-    bool operator >(const T& value) const
+    inline bool operator >(const T& value) const
     {
         if (m_value == nullptr || m_value->is_json_value() == false)
         {
@@ -167,37 +176,37 @@ public:
         }
         else
         {
-            T current_value = ((JsonValue*)m_value)->operator T();
+            T current_value = static_cast<JsonValue*>(m_value)->operator T();
             return current_value > value;
         }
     }
 
     template <class T, std::enable_if_t<!std::is_same<std::decay_t<T>, Json>::value, int> = 0>
-    bool operator <=(const T& value) const
+    inline bool operator <=(const T& value) const
     {
         // Reuse > operator
         return operator>(value) == false;
     }
 
     template <class T, std::enable_if_t<!std::is_same<std::decay_t<T>, Json>::value, int> = 0>
-    bool operator >=(const T& value) const
+    inline bool operator >=(const T& value) const
     {
         // Reuse < operator
         return operator<(value) == false;
     }
 
     template <class T, std::enable_if_t<!std::is_same<std::decay_t<T>, Json>::value, int> = 0>
-    Json& operator +=(const T& value)
+    inline Json& operator +=(const T& value)
     {
         check_create_json_value();
-        T current_value = ((JsonValue*)m_value)->operator T();
+        T current_value = static_cast<JsonValue*>(m_value)->operator T();
         current_value += value;
-        ((JsonValue*)m_value)->operator=(current_value);
+        static_cast<JsonValue*>(m_value)->operator=(current_value);
         return *this;
     }
 
     template <class T, std::enable_if_t<!std::is_same<std::decay_t<T>, Json>::value, int> = 0>
-    Json& operator -=(const T& value)
+    inline Json& operator -=(const T& value)
     {
         operator+=(-value); // Reuse += operator
         return *this;
@@ -217,20 +226,20 @@ public:
     bool has_field(const std::string& field) const;
     void remove_field(const std::string& field);
 
-    void set_is_string_format(bool val)
+    inline void set_is_string_format(bool val)
     {
         if (m_value)
         {
-            ((JsonValue*)m_value)->set_is_string_format(val);
+            static_cast<JsonValue*>(m_value)->set_is_string_format(val);
         }
     }
 
-    bool is_string() const
+    inline bool is_string() const
     {
         return m_value == nullptr ?
             false :
             m_value->is_json_value() ?
-                ((JsonValue*)m_value)->is_string() :
+                static_cast<JsonValue*>(m_value)->is_string() :
                 false;
     }
 
@@ -253,21 +262,12 @@ public:
     }
 
     // Null check
-    bool operator==(std::nullptr_t t) const
+    inline bool operator==(std::nullptr_t t) const
     {
         return is_null();
     }
 
-    ~Json()
-    {
-        if (m_value != nullptr)
-        {
-            m_value->release();
-            m_value = nullptr;
-        }
-    }
-
-    std::string get_string_value() const
+    inline std::string get_string_value() const
     {
         char buffer[STRING_BUFFER_SIZE];
 
@@ -278,7 +278,7 @@ public:
         return builder.finish();
     }
 
-    void write_string_value(JsonStringBuilder& builder) const
+    inline void write_string_value(JsonStringBuilder& builder) const
     {
         if (m_value)
         {
